@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Base;
 BEGIN {
-  $MooseX::Params::Magic::Base::VERSION = '0.001';
+  $MooseX::Params::Magic::Base::VERSION = '0.002';
 }
 
 # ABSTRACT: Base class for building Variable::Magic wizards
@@ -11,7 +11,7 @@ use warnings;
 use Variable::Magic ();
 use Package::Stash  ();
 
-sub new 
+sub new
 {
     my $stash = Package::Stash->new(shift);
 
@@ -29,7 +29,7 @@ sub new
         exists
         delete
         copy_key
-        op_info  
+        op_info
     );
 
     my %map;
@@ -56,7 +56,7 @@ MooseX::Params::Magic::Base - Base class for building Variable::Magic wizards
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 AUTHOR
 

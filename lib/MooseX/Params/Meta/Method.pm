@@ -4,7 +4,7 @@ use 5.010;
 
 package MooseX::Params::Meta::Method;
 BEGIN {
-  $MooseX::Params::Meta::Method::VERSION = '0.001';
+  $MooseX::Params::Meta::Method::VERSION = '0.002';
 }
 
 use Moose;
@@ -14,24 +14,24 @@ extends 'Moose::Meta::Method';
 
 has 'parameters' =>
 (
-	is        => 'rw',
-	isa       => 'HashRef',
-	traits    => ['Hash'],
-	predicate => 'has_parameters',
-	handles   =>
-	{
-		all_parameters => 'values',
-		add_parameter  => 'set',
-		get_parameter  => 'get',
-		get_parameters => 'get',
-	},
+    is        => 'rw',
+    isa       => 'HashRef',
+    traits    => ['Hash'],
+    predicate => 'has_parameters',
+    handles   =>
+    {
+        all_parameters => 'values',
+        add_parameter  => 'set',
+        get_parameter  => 'get',
+        get_parameters => 'get',
+    },
 );
 
 has 'index_offset' =>
 (
-	is      => 'ro',
-	isa     => 'Int',
-	default => 1,
+    is      => 'ro',
+    isa     => 'Int',
+    default => 1,
 );
 
 has '_delayed' =>
@@ -49,50 +49,50 @@ has '_execute' =>
 
 sub _validate_parameters
 {
-	my ($self, %parameters) = @_;
+    my ($self, %parameters) = @_;
 }
 
 sub _convert_argv_to_hash
 {
-	my ($self, @argv) = @_;
+    my ($self, @argv) = @_;
 
-	my (%parameters, %argv);
-	
-	my @positional = grep { $_->type eq 'positional' } $self->get_parameters;
-	my @named      = grep { $_->type eq 'named'      } $self->get_parameters;
+    my (%parameters, %argv);
 
-	my $last_positional_index = max map { $_->index } @positional;
-	my $first_named_index = $last_positional_index + 1;
-	my $last_argv_index = $#argv;
+    my @positional = grep { $_->type eq 'positional' } $self->get_parameters;
+    my @named      = grep { $_->type eq 'named'      } $self->get_parameters;
 
-	if ( $last_positional_index >= $last_argv_index )
-	{
-		@positional = grep { $_->index <= $last_argv_index } @positional;
-		
-	}
-	else
-	{
-		my @extra = @argv[$first_named_index .. $last_argv_index];
+    my $last_positional_index = max map { $_->index } @positional;
+    my $first_named_index = $last_positional_index + 1;
+    my $last_argv_index = $#argv;
 
-		if (@named)
-		{
-			%argv = @extra;
+    if ( $last_positional_index >= $last_argv_index )
+    {
+        @positional = grep { $_->index <= $last_argv_index } @positional;
 
-			foreach my $name ( map { $_->name } @named )
-			{
-				$parameters{$name} = delete $argv{$name} if exists $argv{$name};
-			}
-			$parameters{'__!extra'} = \(%argv);
-		}
-		else
-		{
-			$parameters{'__!extra'} = \@extra;
-		}
-	}
+    }
+    else
+    {
+        my @extra = @argv[$first_named_index .. $last_argv_index];
 
-	$parameters{$_->name} = $argv[$_->index] for @positional;
+        if (@named)
+        {
+            %argv = @extra;
 
-	return %parameters;
+            foreach my $name ( map { $_->name } @named )
+            {
+                $parameters{$name} = delete $argv{$name} if exists $argv{$name};
+            }
+            $parameters{'__!extra'} = \(%argv);
+        }
+        else
+        {
+            $parameters{'__!extra'} = \@extra;
+        }
+    }
+
+    $parameters{$_->name} = $argv[$_->index] for @positional;
+
+    return %parameters;
 }
 
 1;
@@ -108,7 +108,7 @@ MooseX::Params::Meta::Method - The method metarole
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 AUTHOR
 

@@ -1,18 +1,18 @@
 package MooseX::Params::Meta::Class;
 BEGIN {
-  $MooseX::Params::Meta::Class::VERSION = '0.001';
+  $MooseX::Params::Meta::Class::VERSION = '0.002';
 }
 
 # ABSTRACT: The class metarole
 
 use Moose::Role;
 
-has 'parameters' => 
-( 
-	is      => 'rw',
-	isa     => 'ArrayRef',
-	traits  => ['Array'],
-	handles => { 'add_parameter' => 'push' },
+has 'parameters' =>
+(
+    is      => 'rw',
+    isa     => 'ArrayRef',
+    traits  => ['Array'],
+    handles => { 'add_parameter' => 'push' },
 );
 
 no Moose::Role;
@@ -30,7 +30,7 @@ MooseX::Params::Meta::Class - The class metarole
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 AUTHOR
 

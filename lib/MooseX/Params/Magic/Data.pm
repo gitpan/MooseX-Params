@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Data;
 BEGIN {
-  $MooseX::Params::Magic::Data::VERSION = '0.001';
+  $MooseX::Params::Magic::Data::VERSION = '0.002';
 }
 
 # ABSTRACT: Base class for wizard data object
@@ -10,55 +10,55 @@ use Moose;
 
 has 'parameters' =>
 (
-	is       => 'ro',
-	isa      => 'HashRef[MooseX::Params::Meta::Parameter]',
-	required => 1,
-	traits   => [qw(Hash)],
-	handles  => { 
-		get_parameter      => 'get', 
-		all_parameters     => 'elements',
-		allowed_parameters => 'keys',
+    is       => 'ro',
+    isa      => 'HashRef[MooseX::Params::Meta::Parameter]',
+    required => 1,
+    traits   => [qw(Hash)],
+    handles  => {
+        get_parameter      => 'get',
+        all_parameters     => 'elements',
+        allowed_parameters => 'keys',
 
-	},
+    },
 );
 
 has 'lazy' =>
 (
-	is       => 'ro',
-	isa      => 'ArrayRef[Str]',
-	required => 1,
-	lazy     => 1,
-	builder  => '_build_lazy',
-	traits   => [qw(Array)],
-	handles  => { lazy_parameters => 'elements' }
+    is       => 'ro',
+    isa      => 'ArrayRef[Str]',
+    required => 1,
+    lazy     => 1,
+    builder  => '_build_lazy',
+    traits   => [qw(Array)],
+    handles  => { lazy_parameters => 'elements' }
 );
 
 has 'self' =>
 (
-	is => 'ro',
+    is => 'ro',
 );
 
 has 'wrapper' =>
 (
-	is       => 'ro',
-	isa      => 'CodeRef',
-	required => 1,
-	traits   => [qw(Code)],
-	handles  => { wrap => 'execute' },
+    is       => 'ro',
+    isa      => 'CodeRef',
+    required => 1,
+    traits   => [qw(Code)],
+    handles  => { wrap => 'execute' },
 );
 
 has 'package' =>
 (
-	is       => 'ro',
-	isa      => 'Str',
-	required => 1,
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
 );
 
 sub _build_lazy
 {
-	my $self = shift;
-	my @lazy = map { $_->name } grep { $_->lazy } $self->all_parameters;
-	return \@lazy;
+    my $self = shift;
+    my @lazy = map { $_->name } grep { $_->lazy } $self->all_parameters;
+    return \@lazy;
 }
 
 no Moose;
@@ -76,7 +76,7 @@ MooseX::Params::Magic::Data - Base class for wizard data object
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 AUTHOR
 

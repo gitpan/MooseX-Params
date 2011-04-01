@@ -1,11 +1,10 @@
+Changes
 LICENSE
 MANIFEST
 META.yml
 Makefile.PL
 README
 dist.ini
-docs/ParameterValidationApocalypse.mkd
-docs/sugar.pl
 lib/MooseX/Params.pm
 lib/MooseX/Params/Magic/Base.pm
 lib/MooseX/Params/Magic/Data.pm
@@ -21,6 +20,8 @@ t/003-self.t
 t/004-parameter.t
 t/005-lazy.t
 t/006-named.t
+t/release-eol.t
+t/release-no-tabs.t
 t/release-pod-spell.t
 t/release-pod-syntax.t
 weaver.ini

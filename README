@@ -2,7 +2,7 @@ NAME
     MooseX::Params - Parameters with meta, laziness and %_
 
 VERSION
-    version 0.001
+    version 0.002
 
 SYNOPSIS
         package MySystem;
@@ -13,7 +13,7 @@ SYNOPSIS
             params => [
                 username => { required => 1, isa => 'Str' },
                 password => { required => 1, isa => 'Str' },
-            ], 
+            ],
             sub {
                 my $user = $self->load_user($_{username});
                 $_{password} eq $user->password ? 1 : 0;
@@ -108,7 +108,7 @@ PARAMETERS
 
         method do_something => (
             params => [qw(first second third)],
-            sub { ... } 
+            sub { ... }
         );
 
     This declares a method with three positional parameters, called
@@ -126,10 +126,10 @@ PARAMETERS
     values of all parameters passed to the method:
 
         has separator => ( is => 'ro', isa => 'Str', default => ',' );
-    
+
         method print_something => (
             params => [qw(first second third)],
-            sub { print join $self->separator, @_{qw(first second third)} } 
+            sub { print join $self->separator, @_{qw(first second third)} }
         );
 
     Note that %_ is a read-only hash: any attempt to assign values to it
@@ -147,7 +147,7 @@ PARAMETERS
     attributes to parameter processing. From the Moose documentation:
 
         Moose attributes have many properties, and attributes are probably the single most powerful and flexible part of Moose.
-        You can create a powerful class simply by declaring attributes. 
+        You can create a powerful class simply by declaring attributes.
         In fact, it's possible to have classes that consist solely of attribute declarations.
 
     Therefore, the parameter declaration API aims to mirror "Moose"'s
@@ -157,7 +157,7 @@ PARAMETERS
             params => [
                 username => { required => 1, isa => 'Str' },
                 password => { required => 1, isa => 'Str' },
-            ], 
+            ],
             sub {
                 my $user = $self->load_user($_{username});
                 $_{password} eq $user->password ? 1 : 0;
@@ -198,7 +198,7 @@ PARAMETERS
                 username => { required => 1, isa => 'Str' },
                 password => { required => 1, isa => 'Str' },
                 user     => { lazy => 1, builder => '_build_param_user' },
-            ], 
+            ],
             sub {
                 return unless $self->login_enabled;
                 $_{password} eq $_{user}->password ? 1 : 0;
@@ -223,7 +223,7 @@ PARAMETERS
             params => [
                 username => { required => 1, isa => 'Str', type => 'named' },
                 password => { required => 1, isa => 'Str', type => 'named' },
-            ], 
+            ],
             sub { ...  }
         );
 
@@ -238,7 +238,7 @@ PARAMETERS
                 password => { required => 1, isa => 'Str', type => 'positional' },
                 remember => { isa => 'Bool', type => 'named' },
                 secure   => { isa => 'Bool', type => 'named' },
-            ], 
+            ],
             sub { ...  }
         );
 
