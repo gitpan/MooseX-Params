@@ -1,6 +1,6 @@
 package MooseX::Params;
 BEGIN {
-  $MooseX::Params::VERSION = '0.002';
+  $MooseX::Params::VERSION = '0.003';
 }
 
 # ABSTRACT: Parameters with meta, laziness and %_
@@ -278,7 +278,7 @@ MooseX::Params - Parameters with meta, laziness and %_
 
 =head1 VERSION
 
-version 0.002
+version 0.003
 
 =head1 SYNOPSIS
 

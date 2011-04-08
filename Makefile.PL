@@ -36,14 +36,14 @@ my %WriteMakefileArgs = (
     'Moose::Role' => '0',
     'Moose::Util::MetaRole' => '0',
     'Moose::Util::TypeConstraints' => '0',
-    'Package::Stash' => '0',
+    'Package::Stash' => '0.18',
     'Perl6::Caller' => '0',
     'Scalar::Util' => '0',
     'Try::Tiny' => '0',
     'Variable::Magic' => '0',
     'parent' => '0'
   },
-  'VERSION' => '0.002',
+  'VERSION' => '0.003',
   'test' => {
     'TESTS' => 't/*.t'
   }

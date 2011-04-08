@@ -11,7 +11,7 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: 6.31
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 4.102345, CPAN::Meta::Converter version 2.101670'
+generated_by: 'Dist::Zilla version 4.200004, CPAN::Meta::Converter version 2.101670'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -28,7 +28,7 @@ requires:
   Moose::Role: 0
   Moose::Util::MetaRole: 0
   Moose::Util::TypeConstraints: 0
-  Package::Stash: 0
+  Package::Stash: 0.18
   Perl6::Caller: 0
   Scalar::Util: 0
   Try::Tiny: 0
@@ -39,4 +39,4 @@ resources:
   bugtracker: http://rt.cpan.org/Public/Dist/Display.html?Name=MooseX-Params
   homepage: http://github.com/pshangov/moosex-params/tree
   repository: git://github.com/pshangov/moosex-params.git
-version: 0.002
+version: 0.003
