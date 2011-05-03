@@ -6,6 +6,7 @@ Makefile.PL
 README
 dist.ini
 lib/MooseX/Params.pm
+lib/MooseX/Params/Interface/Attributes.pm
 lib/MooseX/Params/Magic/Base.pm
 lib/MooseX/Params/Magic/Data.pm
 lib/MooseX/Params/Magic/Wizard.pm
@@ -20,6 +21,10 @@ t/003-self.t
 t/004-parameter.t
 t/005-lazy.t
 t/006-named.t
+t/attributes/01-parse.t
+t/attributes/02-params.t
+t/attributes/03-lazy.t
+t/attributes/04-named.t
 t/release-eol.t
 t/release-no-tabs.t
 t/release-pod-spell.t

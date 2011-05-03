@@ -1,6 +1,6 @@
 package MooseX::Params::Meta::Class;
 BEGIN {
-  $MooseX::Params::Meta::Class::VERSION = '0.003';
+  $MooseX::Params::Meta::Class::VERSION = '0.004';
 }
 
 # ABSTRACT: The class metarole
@@ -30,7 +30,7 @@ MooseX::Params::Meta::Class - The class metarole
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 AUTHOR
 

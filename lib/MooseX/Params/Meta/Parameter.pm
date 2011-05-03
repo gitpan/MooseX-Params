@@ -1,6 +1,6 @@
 package MooseX::Params::Meta::Parameter;
 BEGIN {
-  $MooseX::Params::Meta::Parameter::VERSION = '0.003';
+  $MooseX::Params::Meta::Parameter::VERSION = '0.004';
 }
 
 # ABSTRACT: The parameter metarole
@@ -32,8 +32,14 @@ has 'index' =>
 has 'constraint' =>
 (
     is       => 'rw',
-    isa      => 'Str',
+    isa      => 'Maybe[Str]',
     init_arg => 'isa',
+);
+
+has 'init_arg' =>
+(
+    is       => 'rw',
+    isa      => 'Maybe[Str]',
 );
 
 has 'default' =>
@@ -83,6 +89,13 @@ has 'auto_deref' =>
     isa => 'Bool',
 );
 
+has 'slurpy' =>
+(
+    is      => 'rw',
+    isa     => 'Bool',
+);
+
+
 has 'lazy_build' =>
 (
     is      => 'rw',
@@ -98,7 +111,7 @@ has 'lazy_build' =>
 has 'builder' =>
 (
     is  => 'rw',
-    isa => 'Str',
+    isa => 'Maybe[Str]',
 );
 
 has 'builder_sub' =>
@@ -156,7 +169,7 @@ MooseX::Params::Meta::Parameter - The parameter metarole
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 AUTHOR
 

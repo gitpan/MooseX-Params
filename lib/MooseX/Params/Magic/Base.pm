@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Base;
 BEGIN {
-  $MooseX::Params::Magic::Base::VERSION = '0.003';
+  $MooseX::Params::Magic::Base::VERSION = '0.004';
 }
 
 # ABSTRACT: Base class for building Variable::Magic wizards
@@ -56,7 +56,7 @@ MooseX::Params::Magic::Base - Base class for building Variable::Magic wizards
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 AUTHOR
 

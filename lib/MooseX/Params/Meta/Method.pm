@@ -4,7 +4,7 @@ use 5.010;
 
 package MooseX::Params::Meta::Method;
 BEGIN {
-  $MooseX::Params::Meta::Method::VERSION = '0.003';
+  $MooseX::Params::Meta::Method::VERSION = '0.004';
 }
 
 use Moose;
@@ -108,7 +108,7 @@ MooseX::Params::Meta::Method - The method metarole
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 AUTHOR
 

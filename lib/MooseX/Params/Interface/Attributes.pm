@@ -1,0 +1,86 @@
+package MooseX::Params::Interface::Attributes;
+BEGIN {
+  $MooseX::Params::Interface::Attributes::VERSION = '0.004';
+}
+
+# ABSTRACT: Subroutine signature declaration via attributes
+
+use strict;
+use warnings;
+use 5.010;
+use Attribute::Handlers;
+use Package::Stash;
+use MooseX::Params::Util::Parameter;
+use MooseX::Params::Meta::Method;
+use Moose::Meta::Class;
+
+sub import
+{
+    my $inheritor = caller;
+
+    my $stash = Package::Stash->new($inheritor);
+    $stash->add_symbol('$self', undef);
+
+    {
+        no strict 'refs';
+        push @{"$inheritor\::ISA"}, __PACKAGE__;
+        use strict 'refs';
+    }
+}
+
+sub Args :ATTR(CODE,RAWDATA)
+{
+    my ($package, $symbol, $referent, $attr, $data) = @_;
+
+    my ($name) = $$symbol =~ /.+::(\w+)$/;
+
+    my $stash = Package::Stash->new($package);
+
+    my %parameters = MooseX::Params::Util::Parameter::inflate_parameters(
+        $package,
+        map { $_->{name} => $_ }
+        MooseX::Params::Util::Parameter::parse_params_attribute($data)
+    );
+
+    my $coderef = \&$symbol;
+    my $wrapped_coderef = MooseX::Params::Util::Parameter::wrap($coderef, $package, \%parameters);
+
+    my $method = MooseX::Params::Meta::Method->wrap(
+        $wrapped_coderef,
+        name         => $name,
+        package_name => $package,
+        parameters   => \%parameters,
+    );
+
+    my $meta = Moose::Meta::Class->initialize($package);
+    $meta->add_method($name, $method);
+}
+
+1;
+
+__END__
+=pod
+
+=for :stopwords Peter Shangov TODO invocant isa metaroles metarole multimethods sourcecode
+
+=head1 NAME
+
+MooseX::Params::Interface::Attributes - Subroutine signature declaration via attributes
+
+=head1 VERSION
+
+version 0.004
+
+=head1 AUTHOR
+
+Peter Shangov <pshangov@yahoo.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Peter Shangov.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+

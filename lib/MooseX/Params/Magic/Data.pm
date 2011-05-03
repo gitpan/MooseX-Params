@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Data;
 BEGIN {
-  $MooseX::Params::Magic::Data::VERSION = '0.003';
+  $MooseX::Params::Magic::Data::VERSION = '0.004';
 }
 
 # ABSTRACT: Base class for wizard data object
@@ -76,7 +76,7 @@ MooseX::Params::Magic::Data - Base class for wizard data object
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 AUTHOR
 

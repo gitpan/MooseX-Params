@@ -2,7 +2,7 @@ NAME
     MooseX::Params - Parameters with meta, laziness and %_
 
 VERSION
-    version 0.003
+    version 0.004
 
 SYNOPSIS
         package MySystem;
@@ -20,6 +20,16 @@ SYNOPSIS
             };
 
         method 'load_user' ...
+
+        # attributes based interface
+
+        use MooseX::Params::Interface::Attributes
+
+        sub login :Args(Str username, Str password)
+        {
+            my $user = $self->load_user($_{username});
+            $_{password} eq $user->password ? 1 : 0;
+        }
 
 DESCRIPTION
     This modules puts forward several proposals to evolve perl's method

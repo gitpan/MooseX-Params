@@ -26,12 +26,14 @@ my %WriteMakefileArgs = (
   'LICENSE' => 'perl',
   'NAME' => 'MooseX::Params',
   'PREREQ_PM' => {
+    'Attribute::Handlers' => '0',
     'B::Hooks::EndOfScope' => '0',
     'Carp' => '0',
     'Class::MOP::Class' => '0',
     'List::Util' => '0',
     'Moose' => '0',
     'Moose::Exporter' => '0',
+    'Moose::Meta::Class' => '0',
     'Moose::Meta::Method' => '0',
     'Moose::Role' => '0',
     'Moose::Util::MetaRole' => '0',
@@ -39,13 +41,14 @@ my %WriteMakefileArgs = (
     'Package::Stash' => '0.18',
     'Perl6::Caller' => '0',
     'Scalar::Util' => '0',
+    'Text::CSV_XS' => '0',
     'Try::Tiny' => '0',
     'Variable::Magic' => '0',
     'parent' => '0'
   },
-  'VERSION' => '0.003',
+  'VERSION' => '0.004',
   'test' => {
-    'TESTS' => 't/*.t'
+    'TESTS' => 't/*.t t/attributes/*.t'
   }
 );
 
