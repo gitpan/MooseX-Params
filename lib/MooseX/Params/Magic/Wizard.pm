@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Wizard;
 BEGIN {
-  $MooseX::Params::Magic::Wizard::VERSION = '0.004';
+  $MooseX::Params::Magic::Wizard::VERSION = '0.005';
 }
 
 # ABSTRACT: Magic behavior for %_
@@ -9,7 +9,7 @@ use 5.010;
 use strict;
 use warnings;
 use Carp ();
-use MooseX::Params::Util::Parameter;
+use MooseX::Params::Util;
 use MooseX::Params::Magic::Data;
 use parent 'MooseX::Params::Magic::Base';
 
@@ -37,7 +37,7 @@ sub fetch
     # this check should not be necessary
     if ($builder)
     {
-        my %updated = $wrapped->($data->self, %$ref);
+        my %updated = $wrapped->(%$ref);
         foreach my $updated_key ( keys %updated )
         {
             $ref->{$updated_key} = $updated{$updated_key}
@@ -52,7 +52,7 @@ sub fetch
 
 sub store
 {
-    Carp::croak "Don't touch me!" if caller ne __PACKAGE__;
+    Carp::croak "Attempt to modify read-only parameter" if caller ne __PACKAGE__;
 }
 
 1;
@@ -61,6 +61,7 @@ __END__
 =pod
 
 =for :stopwords Peter Shangov TODO invocant isa metaroles metarole multimethods sourcecode
+backwards buildargs checkargs slurpy preprocess
 
 =head1 NAME
 
@@ -68,7 +69,7 @@ MooseX::Params::Magic::Wizard - Magic behavior for %_
 
 =head1 VERSION
 
-version 0.004
+version 0.005
 
 =head1 AUTHOR
 

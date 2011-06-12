@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Data;
 BEGIN {
-  $MooseX::Params::Magic::Data::VERSION = '0.004';
+  $MooseX::Params::Magic::Data::VERSION = '0.005';
 }
 
 # ABSTRACT: Base class for wizard data object
@@ -69,6 +69,7 @@ __END__
 =pod
 
 =for :stopwords Peter Shangov TODO invocant isa metaroles metarole multimethods sourcecode
+backwards buildargs checkargs slurpy preprocess
 
 =head1 NAME
 
@@ -76,7 +77,7 @@ MooseX::Params::Magic::Data - Base class for wizard data object
 
 =head1 VERSION
 
-version 0.004
+version 0.005
 
 =head1 AUTHOR
 

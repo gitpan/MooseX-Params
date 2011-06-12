@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Base;
 BEGIN {
-  $MooseX::Params::Magic::Base::VERSION = '0.004';
+  $MooseX::Params::Magic::Base::VERSION = '0.005';
 }
 
 # ABSTRACT: Base class for building Variable::Magic wizards
@@ -49,6 +49,7 @@ __END__
 =pod
 
 =for :stopwords Peter Shangov TODO invocant isa metaroles metarole multimethods sourcecode
+backwards buildargs checkargs slurpy preprocess
 
 =head1 NAME
 
@@ -56,7 +57,7 @@ MooseX::Params::Magic::Base - Base class for building Variable::Magic wizards
 
 =head1 VERSION
 
-version 0.004
+version 0.005
 
 =head1 AUTHOR
 

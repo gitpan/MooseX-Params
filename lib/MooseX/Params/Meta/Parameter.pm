@@ -1,6 +1,6 @@
 package MooseX::Params::Meta::Parameter;
 BEGIN {
-  $MooseX::Params::Meta::Parameter::VERSION = '0.004';
+  $MooseX::Params::Meta::Parameter::VERSION = '0.005';
 }
 
 # ABSTRACT: The parameter metarole
@@ -162,6 +162,7 @@ __END__
 =pod
 
 =for :stopwords Peter Shangov TODO invocant isa metaroles metarole multimethods sourcecode
+backwards buildargs checkargs slurpy preprocess
 
 =head1 NAME
 
@@ -169,7 +170,7 @@ MooseX::Params::Meta::Parameter - The parameter metarole
 
 =head1 VERSION
 
-version 0.004
+version 0.005
 
 =head1 AUTHOR
 

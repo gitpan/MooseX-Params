@@ -2,9 +2,9 @@
 use strict;
 use warnings;
 
-BEGIN { require 5.10.0; }
+BEGIN { require 5.010; }
 
-use ExtUtils::MakeMaker 6.31;
+use ExtUtils::MakeMaker 6.30;
 
 
 
@@ -12,14 +12,14 @@ my %WriteMakefileArgs = (
   'ABSTRACT' => 'Parameters with meta, laziness and %_',
   'AUTHOR' => 'Peter Shangov <pshangov@yahoo.com>',
   'BUILD_REQUIRES' => {
-    'Devel::Dwarn' => '0',
     'File::Find' => '0',
     'File::Temp' => '0',
+    'IO::String' => '0',
     'Test::More' => '0',
     'Test::Most' => '0'
   },
   'CONFIGURE_REQUIRES' => {
-    'ExtUtils::MakeMaker' => '6.31'
+    'ExtUtils::MakeMaker' => '6.30'
   },
   'DISTNAME' => 'MooseX-Params',
   'EXE_FILES' => [],
@@ -32,11 +32,8 @@ my %WriteMakefileArgs = (
     'Class::MOP::Class' => '0',
     'List::Util' => '0',
     'Moose' => '0',
-    'Moose::Exporter' => '0',
     'Moose::Meta::Class' => '0',
     'Moose::Meta::Method' => '0',
-    'Moose::Role' => '0',
-    'Moose::Util::MetaRole' => '0',
     'Moose::Util::TypeConstraints' => '0',
     'Package::Stash' => '0.18',
     'Perl6::Caller' => '0',
@@ -44,11 +41,12 @@ my %WriteMakefileArgs = (
     'Text::CSV_XS' => '0',
     'Try::Tiny' => '0',
     'Variable::Magic' => '0',
+    'attributes' => '0',
     'parent' => '0'
   },
-  'VERSION' => '0.004',
+  'VERSION' => '0.005',
   'test' => {
-    'TESTS' => 't/*.t t/attributes/*.t'
+    'TESTS' => 't/*.t'
   }
 );
 

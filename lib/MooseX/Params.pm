@@ -1,224 +1,65 @@
 package MooseX::Params;
 BEGIN {
-  $MooseX::Params::VERSION = '0.004';
+  $MooseX::Params::VERSION = '0.005';
 }
 
-# ABSTRACT: Parameters with meta, laziness and %_
+# ABSTRACT: Subroutine signature declaration via attributes
 
 use strict;
 use warnings;
-use 5.10.0;
-use Moose;
-use Moose::Exporter;
-use Moose::Util::MetaRole;
+use 5.010;
+use Attribute::Handlers;
+use MooseX::Params::Util;
 use MooseX::Params::Meta::Method;
-use MooseX::Params::Meta::Parameter;
-use MooseX::Params::Util::Parameter;
-use MooseX::Params::Magic::Wizard;
-use Perl6::Caller;
-use Package::Stash;
+use Moose::Meta::Class;
 
-my $wizard = MooseX::Params::Magic::Wizard->new;
-
-my ( $import, $unimport, $init_meta ) = Moose::Exporter->build_import_methods(
-    with_meta => [qw(method)],
-    also      => 'Moose',
-    install   => [qw(unimport)]
-);
-
-sub import {
-    my $frame = 1;
-    my ($package_name, $method_name) =  caller($frame)->subroutine  =~ /^(.+)::(\w+)$/;
-
-    my $stash = Package::Stash->new($package_name);
-    $stash->add_symbol('$self', undef);
-
-    goto &$import;
+sub import
+{
+    no strict 'refs';
+    push @{caller().'::ISA'}, __PACKAGE__;
+    use strict 'refs';
 }
 
-sub init_meta
+sub Args :ATTR(CODE,RAWDATA)
 {
-    shift;
-    my %args = @_;
-    Moose->init_meta(%args);
-    Moose::Util::MetaRole::apply_metaroles(
-        for => $args{for_class},
-        class_metaroles => { class => ['MooseX::Params::Meta::Class'] },
-    );
-}
+    my ($package, $symbol, $referent, $attr, $data) = @_;
 
-sub method
-{
-    my ( $meta, $name, @options ) = @_;
+    my ($name)  = $$symbol =~ /.+::(\w+)$/;
+    my $coderef = \&$symbol;
 
-    my $stash = Package::Stash->new($meta->{package});
-    my ($coderef, %options);
+    my $parameters = MooseX::Params::Util::inflate_parameters($package, $data);
 
-    if (!@options)
-    {
-        $options{execute} = "_execute_$name";
-        $coderef = $stash->get_symbol('&' . $options{execute});
-    }
-    elsif (@options == 1 and ref $options[0] eq 'CODE')
-    {
-        $coderef = shift @options;
-    }
-    elsif (@options % 2 and ref $options[-1] eq 'CODE')
-    {
-        $coderef = pop @options;
-        %options = @options;
-
-        if ($options{execute})
-        {
-            Carp::croak("Cannot create method: we found both an 'execute' option and a trailing coderef");
-        }
-    }
-    elsif (!(@options % 2))
-    {
-        %options = @options;
-
-        if ( exists $options{execute} )
-        {
-            my $reftype = ref $options{execute};
-            if (!$reftype)
-            {
-                $coderef = $stash->get_symbol('&' . $options{execute});
-            }
-            elsif ($reftype eq 'CODE')
-            {
-                $coderef = $options{execute};
-            }
-            else
-            {
-                Carp::croak("Option 'execute' must be a coderef, not $reftype");
-            }
-        }
-        else
-        {
-            $options{execute} = "_execute_$name";
-            $coderef = $stash->get_symbol('&' . $options{execute});
-        }
-    }
-    else
-    {
-        Carp::croak("Cannot create method $name: invalid arguments");
-    }
-
-    my %parameters;
-    if (%options)
-    {
-        if ($options{params})
-        {
-            if (ref $options{params} eq 'ARRAY')
-            {
-                %parameters = MooseX::Params::Util::Parameter::inflate_parameters($meta->{package}, @{$options{params}});
-            }
-            #elsif ($options{params} eq 'HASH') { }
-            else
-            {
-                Carp::croak("Argument to 'params' must be either an arrayref or a hashref");
-            }
-        }
-    }
-
-    my $prototype = delete $options{prototype};
-    my $package_name = $meta->{package};
-    # TODO execute later (after parameters are determined)
-    my $wrapped_coderef = MooseX::Params::Util::Parameter::wrap($coderef, $package_name, \%parameters, $prototype);
+    my $wrapped_coderef = MooseX::Params::Util::wrap_method($coderef, $package, $parameters);
 
     my $method = MooseX::Params::Meta::Method->wrap(
         $wrapped_coderef,
         name         => $name,
-        package_name => $meta->{package},
-        parameters   => \%parameters,
+        package_name => $package,
+        parameters   => $parameters,
     );
 
-    $meta->add_method($name, $method) unless defined wantarray;
-
-    return $method;
+    Moose::Meta::Class->initialize($package)->add_method($name, $method);
 }
 
-### EXPERIMENTAL STUFF ###
-
-# alternative syntax to define method body:
-# execute 'method_name' => sub { ... };
-sub execute
+sub BuildArgs :ATTR(CODE,RAWDATA)
 {
-    my ($meta, $name, $coderef) = @_;
+    my ($package, $symbol, $referent, $attr, $data) = @_;
+    my ($name)  = $$symbol =~ /.+::(\w+)$/;
+    $data = "_buildargs_$name" unless $data;
 
-    my $old_method = $meta->remove_method($name);
-    my $package_name = $old_method->package_name;
-    my $wrapped_coderef = MooseX::Params::Util::Parameter::wrap($coderef, $package_name, $old_method->parameters);
-
-    my $new_method = MooseX::Params::Meta::Method->wrap(
-        $wrapped_coderef,
-        name         => $name,
-        package_name => $package_name,
-        _delayed     => 0,
-    );
-
-    $meta->add_method($name, $new_method);
+    my $method = Moose::Meta::Class->initialize($package)->get_method($name);
+    $method->buildargs($data);
 }
 
-# define parameter definitions at class level, to be reused across methods
-# param 'param_name' => ( ... );
-sub param
+sub CheckArgs :ATTR(CODE,RAWDATA)
 {
-    my ( $meta, $name, %options ) = @_;
-    $meta->add_parameter($name);
+    my ($package, $symbol, $referent, $attr, $data) = @_;
+    my ($name)  = $$symbol =~ /.+::(\w+)$/;
+    $data = "_checkargs_$name" unless $data;
+
+    my $method = Moose::Meta::Class->initialize($package)->get_method($name);
+    $method->checkargs($data);
 }
-
-# alternative syntax to access parameters
-# my ($first, $second, $third) = params qw(first second third);
-sub params
-{
-    my $meta = shift;
-    my @parameters = @_;
-
-    my $frame = 3;
-    my ($package_name, $method_name) =  caller($frame)->subroutine  =~ /^(.+)::(\w+)$/;
-
-    #my $package_with_percent_underscore = 'MooseX::Params';
-    my $package_with_percent_underscore = $package_name;
-
-
-    my $stash = Package::Stash->new($package_with_percent_underscore);
-    my %args = %{ $stash->get_symbol('%_') };
-
-    # optionally dereference last requested parameter
-    my $last_param = pop @parameters;
-    my ($last_param_object) = $meta->get_method($method_name)->get_parameters_by_name($last_param);
-    my @last_value = my $last_value = $args{$last_param};
-
-    my $auto_deref;
-
-    if ($last_param_object->auto_deref)
-    {
-        if ( ref $last_value eq 'HASH' )
-        {
-            @last_value = %$last_value;
-            $auto_deref++;
-        }
-        elsif ( ref $last_value eq 'ARRAY' )
-        {
-            @last_value = @$last_value;
-            $auto_deref++;
-        }
-    }
-
-    my @all_values = ( @args{@parameters}, @last_value );
-
-    if (@parameters == 0 and !$auto_deref)
-    {
-        return $last_value;
-    }
-    else
-    {
-        return @all_values;
-    }
-}
-
-no Moose;
 
 1;
 
@@ -227,46 +68,191 @@ __END__
 =pod
 
 =for :stopwords Peter Shangov TODO invocant isa metaroles metarole multimethods sourcecode
+backwards buildargs checkargs slurpy preprocess
 
 =head1 NAME
 
-MooseX::Params - Parameters with meta, laziness and %_
+MooseX::Params - Subroutine signature declaration via attributes
 
 =head1 VERSION
 
-version 0.004
+version 0.005
 
 =head1 SYNOPSIS
 
-    package MySystem;
+  # use Moose types for validation
+  # positional arguments are by default required
+  sub add :Args(Int first, Int second) {
+    return $_{first} + $_{second};
+  }
 
-    use MooseX::Params;
+  say add(2, 3); # 5
+  say add(2);    # error
 
-    method 'login',
-        params => [
-            username => { required => 1, isa => 'Str' },
-            password => { required => 1, isa => 'Str' },
-        ],
-        sub {
-            my $user = $self->load_user($_{username});
-            $_{password} eq $user->password ? 1 : 0;
-        };
+  # @_ still works: you can ignore %_ if you want to
+  sub add2 :Args(Int first, Int second) {
+    my ($first, $second) = @_;
+    return $first + $second;
+  }
 
-    method 'load_user' ...
+  say add2(2, 3); # 5
 
-    # attributes based interface
+  # '&' before a type constraint enables coercion
+  subtype 'HexNum', as 'Str', where { /[a-f0-9]/i };
+  coerce 'Int', from 'HexNum', via { hex $_ };
 
-    use MooseX::Params::Interface::Attributes
+  sub add3 :Args(&Int first, &Int second) {
+    return $_{first} + $_{second};
+  }
 
-    sub login :Args(Str username, Str password)
-    {
-        my $user = $self->load_user($_{username});
-        $_{password} eq $user->password ? 1 : 0;
+  say add3('A', 'B'); # 21
+
+  # slurpy arguments consume the remainder of @_
+  sub sum :Args(ArrayRef *values) {
+    my $sum = 0;
+    my @values = @{$_{values}};
+
+    foreach my $value (@values) {
+      $sum += $value;
     }
+    return $sum;
+  }
+
+  say sum(2, 3, 4, 5); # 14
+
+  # 'all' is optional:
+  # if not present search the text within a file and return 1 if found, 0 if not
+  # if present search the text and return number of lines in which text is found
+  sub search :Args(text, fh, all?) {
+    my $cnt = 0;
+
+    while (my $line = $_{fh}->getline) {
+      if ( index($line, $_{text}) > -1 ) {
+        return 1 if not $_{all};
+        $cnt++;
+      }
+    }
+
+    return $cnt;
+  }
+
+  # named arguments
+  sub foo :Args(a, :b) {
+    return $_{a} + $_{b} * 2;
+  }
+
+  # say foo( 3, b => 2 ); # 7
+  # say foo(4, 9);        # error
+  # say foo(2);           # error
+  # say foo(2, 3, 4);     # error
+
+  # parameters are immutable, assign to a variable to edit
+  sub trim :Args(Str string) {
+      my $string = $_{string};
+      $string =~ s/^\s*//;
+      $string =~ s/\s*$//;
+      return $string;
+  }
+
+  # parameters can have simple defaults
+  sub find_clothes :Args(:size = 'medium', :color = 'white') { ... }
+
+  # or builders for more complex tasks
+  sub find_clothes :Args(
+    :size   = _build_param_size,
+    :color  = _build_param_color,
+    :height = 170 )
+  { ... }
+
+  sub _build_param_color {
+      return (qw(red green blue))[ int( rand 3 ) ];
+  }
+
+  # you can access all other parameters within a builder
+  sub _build_param_size {
+      return $_{height} > 200 ? 'large' : 'medium';
+  }
+
+  # preprocess @_ with buildargs
+  sub process_template
+    :Args(input, output, params)
+    :BuildArgs(_buildargs_process_template)
+  {
+    say "open $_{input}";
+    say "replace " . Dumper $_{params};
+    say "save $_{output}";
+  }
+
+  # if 'output' is not provided, deduct it from input filename
+  sub _buildargs_process_template {
+    if (@_ == 2) {
+      my ($input, $params) = @_;
+      my $output = $input;
+      substr($output, -4, 4, "html");
+      return $input, $output, $params;
+    } else {
+      return @_;
+    }
+  }
+
+  my %data = (
+    fname => "Foo",
+    lname => "Bar",
+  );
+
+  process_template("index.tmpl", \%data);
+  # open index.tmpl
+  # replace {"lname" => "Bar", "fname" => "Foo"}
+  # save index.html
+
+  process_template("from.tmpl", "to.html", \%data);
+  # open from.tmpl
+  # replace {"lname" => "Bar", "fname" => "Foo"}
+  # save to.html
+
+  # additional validation with checkargs
+  sub process_person
+    :Args(:first_name!, :last_name!, :country!, :ssn?)
+    :CheckArgs # shortcut for :CheckArgs(_checkargs_${subname})
+  { ... }
+
+  sub _checkargs_process_person {
+    if ( $_{country} eq 'USA' ) {
+      die 'All US residents must have an SSN' unless $_{ssn};
+    }
+  }
+
+  # in a class
+  package User;
+
+  use Moose;
+  use MooseX::Params;
+  use DateTime;
+
+  extends 'Person';
+
+  has 'password' => (
+    is  => 'rw',
+    isa => 'Str',
+  );
+
+  has 'last_login' => (
+    is      => 'rw',
+    isa     => 'DateTime',
+  );
+
+  # note the shortcut invocant syntax
+  sub login :Args(self: Str pw) {
+    return 0 if $_{pw} ne $_{self}->password;
+
+    $_{self}->last_login( DateTime->now() );
+
+    return 1;
+  }
 
 =head1 DESCRIPTION
 
-This modules puts forward several proposals to evolve perl's method declaration and parameter processing syntax. For the original rationale see L<http://mechanicalrevolution.com/blog/parameter_apocalypse.html>.
+This modules provides an attributes-based interface for parameter processing in Perl 5. For the original rationale see L<http://mechanicalrevolution.com/blog/parameter_apocalypse.html>.
 
 The proposed interface is based on three cornerstone propositions:
 
@@ -286,209 +272,184 @@ The global variable C<%_> is used as a placeholder for processed parameters. It 
 
 =back
 
-=head1 DO NOT USE
+=head1 USE WITH CARE
 
-This is an experimental module and has been uploaded to CPAN for showcase purposes only. It is incomplete, slow, buggy, and does not come with any maintenance guarantee. At this point it is not suitable for use in production environments.
+This is still an experimental module and is subject to backwards incompatible changes. It is barely tested and most certainly has serious lurking bugs, has a lot of room for performance optimizations, and its error reporting could be vastly improved.
 
-=head1 METHODS
+=head1 BACKWARDS INCOMPATIBLE CHANGES
 
-C<MooseX::Params> exports the C<method> keyword which is used to declare a new method. The simplest method declaration consists of a method name and code to execute:
+Version 0.005 removes the interface based on the C<method> keyword, and retains only the attributes-based interface. Also, C<$self> is no longer localized inside methods, you must use C<$_{self}> instead.
 
-    method do_something => sub { ... };
+=head1 SIGNATURE SYNTAX
 
-You can specify other options when declaring a method, but a trailing sub is always considered the method body:
-
-    method do_something => (
-        params => ... # declare parameters
-        sub { ... }   # body
-    );
-
-The method body can also be explicitly specified via the C<execute> option:
-
-    method do_something => (
-        params  => ...         # declare parameters
-        execute => sub { ... } # body
-    );
-
-This syntax allows for a method to have more than one executable parts (think C<BUILD> and C<BUILDARGS> for L<Moose> constructors):
-
-    # pseudo code - 'buildargs' and 'build' are not implemented yet!
-    method do_something => (
-        params    => ...          # declare parameters
-        buildargs => sub { ... }, # coerce a different signature
-        build     => sub { ... }, # perform more complex checks
-        execute   => sub { ... }, # body
-    );
-
-The C<execute> option can also point to the name of a subroutine to use as the method body:
-
-    method do_something => (
-        params  => ...
-        execute => '_execute_do_something'
-    );
-
-    sub _execute_do_something { ... }
-
-Actually if no method body is specified it will default to a sub named C<_execute_$method_name>:
-
-    method 'do_something';
-
-    sub _execute_do_something { ... }
-
-=head1 PARAMETERS
+Signatures are declared with the C<:Args> attribute. All parsed parameters are made available inside your subroutine within the special C<%_> hash. All elements of C<%_> are read-only, and an attempt to modify them will throw an exception. An attempt to use a hash element which is not a valid parameter name for this subroutine will also throw an exception. C<@_> is not affected by the use of signatures, so you can still use it to manually unpack arguments if you want to.
 
 =head2 Parameter names
 
-Each parameter, whether passed in a named or positional fashion, has a name. The simplest parameter declaration looks like this:
+Parameter names can by any valid perl identifiers, and they are separated by commas.
 
-    method do_something => (
-        params => [qw(first second third)],
-        sub { ... }
-    );
+  sub rank :Args(first, second, third) {
+    say "$_{first} is first, $_{second} is second, and $_{third} is third";
+  }
 
-This declares a method with three positional parameters, called respectively C<first>, C<second> and C<third>. No validation or processing options have been specified for these parameters. You can now execute this method as:
+=head2 Invocant
 
-    $self->do_something($first_argument, $second_argument, $third_argument);
+Method signatures can specify their invocant as the first parameter, followed by a colon:
 
-=head2 C<%_> and C<$self>
+  sub rank :Args(self: first, second, third) {
+    my $competition = $_{self}->competition;
+    ...
+  }
 
-This module takes a somewhat radical approach to accessing method parameters. It introduces two global variables in the using module's namespace: C<%_> and C<$self>. Within a method body, C<$self> is always localized to the method's invocant. The special C<%_> hash contains the processed values of all parameters passed to the method:
+=head2 Type constraints
 
-    has separator => ( is => 'ro', isa => 'Str', default => ',' );
+Moose type constraints may be used for validation.
 
-    method print_something => (
-        params => [qw(first second third)],
-        sub { print join $self->separator, @_{qw(first second third)} }
-    );
+  sub rank :Args(Str first, Str second, Str third) { ... }
 
-Note that C<%_> is a read-only hash: any attempt to assign values to it will currently throw an exception. An exception will also be thrown if you attempt to access an element whose key is not a valid parameter name. C<@_> is also available if you want to do traditional-style unpacking of your parameters.
+An ampersand before a type enables coercion for this type.
 
-The downside of the current implementation is that functions called from within your method may access their caller's C<$self> and C<%_> variables (this is not impossible to remedy though).
+  subtype 'Name' ...;
 
-=head2 Parameter processing
+  coerce 'Name', from 'Str', via { ... };
 
-The main purpose of this module is to bring the full power of L<Moose> attributes to parameter processing. From the L<Moose> documentation:
+  sub rank :Args(&Name first, &Name second, &Name third) { ... }
 
-    Moose attributes have many properties, and attributes are probably the single most powerful and flexible part of Moose.
-    You can create a powerful class simply by declaring attributes.
-    In fact, it's possible to have classes that consist solely of attribute declarations.
+=head2 Positional and named parameters
 
-Therefore, the parameter declaration API aims to mirror C<Moose>'s attribute API as close as possible:
+Parameters are by default positional.
 
-    method 'login' => (
-        params => [
-            username => { required => 1, isa => 'Str' },
-            password => { required => 1, isa => 'Str' },
-        ],
-        sub {
-            my $user = $self->load_user($_{username});
-            $_{password} eq $user->password ? 1 : 0;
-        }
-    );
+  sub rank :Args(first, second, third) { ... }
+  # rank('Peter', 'George', 'John')
 
-The following options are currently supported (most of them should be self-explanatory):
+Named parameters are prefixed by a colon.
 
-=over 4
+  sub rank :Args(:first, :second, :third) { ... }
+  # rank( first => 'Peter', second => 'George', third => 'John')
 
-=item *
+Named parameters may be passed by one name and accessed by another.
 
-required
+  sub rank :Args(:gold(first), :silver(second), :bronze(third)) {
+    say "$_{first} is first, $_{second} is second, and $_{third} is third";
+  }
+  # rank( gold => 'Peter', silver => 'George', bronze => 'John')
 
-=item *
+Positional and named parameters may be mixed, but positional parameters must come first.
 
-isa
+  sub rank :Args(first, :second, :third) {
+    say "$_{first} is first, $_{second} is second, and $_{third} is third";
+  }
+  # rank( 'Peter', second => 'George', third => 'John')
 
-=item *
+=head2 Required parameters
 
-coerce
+An exclamation mark (C<!>) after the name denotes a required parameter, and a question mark (C<?>) denotes an optional parameter.
 
-=item *
+  sub rank :Args(first!, second?, third?) { ... }
 
-default
+Positional parameters are by default required, and named parameters are by default optional.
 
-=item *
+=head2 Slurpy parameters
 
-builder
+A parameter prefixed by an asterisk (C<*>) is slurpy, i.e. it consumes the remainder of the argument list. Slurpy parameters must come last in the signature.
 
-=item *
+  sub rank :Args(ArrayRef *winners) {
+    say "$_{winners}[0] is first, $_{winners}[1] is second, and $_{winners}[2] is third";
+  }
 
-lazy
+=head2 Default values
 
-=item *
+A parameter may be given a simple default value, which can be either a quoted string or an unsigned integer.
 
-lazy_build
+  sub rank :Args(first = 'Peter', second = 'George', third = 'John') { ... }
 
-=item *
+You may use either single or double quotes to quote a string, but they will always be interpreted as if single quotes were used.
 
-documentation
+=head2 Builders
 
-=back
+Where a default value is not sufficient, parameters may specify builders instead. A builder is a subroutine whose return value will be used as default value for the parameter.
 
-Other options (e.g. traits, triggers, etc.) will be supported in the future.
+  sub rank :Args(ArrayRef *winners = calculate_winners) { ... }
 
-=head2 Lazy building
+  sub calculate_winners { ... }
 
-Lazy building requires some explanation. As with L<Moose> attributes, the value of a parameter marked as lazy will not be processed until the first attempt to access it. This means that you can create parameters with expensive builders that will not execute if the code where they are called is never reached.
+The name of the builder may be optionally followed by a pair of parenthesis.
 
-    method 'login' => (
-        params => [
-            username => { required => 1, isa => 'Str' },
-            password => { required => 1, isa => 'Str' },
-            user     => { lazy => 1, builder => '_build_param_user' },
-        ],
-        sub {
-            return unless $self->login_enabled;
-            $_{password} eq $_{user}->password ? 1 : 0;
-        }
-    );
+  sub rank :Args(ArrayRef *winners = calculate_winners()) { ... }
 
-    sub _build_param_user { $self->load_user($_{username}) }
+All builders are executed lazily, i.e. the first time the parameter is accessed. If a parameter name is followed by an equal sign, but neither a default value nor a builder is specified, it is assumed that the parameter has a builder named C<_build_param_${name}>. In this case the equal sign may also be placed before the name of the parameter.
 
-Within a parameter builder you can access C<$self> and C<%_> just as in the method body. C<%_> contains all parameters processed so far and is still read-only. The builder must return the value of the requested parameter.
+  sub rank :Args(ArrayRef *winners=) { ... }
+  # is equivalent to
+  sub rank :Args(ArrayRef =*winners) { ... }
+  # is equivalent to
+  sub rank :Args(ArrayRef *winners = _build_param_winners) { ... }
 
-The C<lazy_build> option is a shortcut for:
+  sub _build_param_winners { ... }
 
-    required => 1, lazy => 1, builder => "_build_param_$param_name"
+Within a parameter builder, you can access all other parameters in the C<%_> hash.
 
-=head2 Named vs. positional
+  sub connect :Args(=:dbh, :host, :port, :database) { ... }
 
-By default all parameters are positional. You can ask for named parameters via the C<type> option:
+  sub _build_param_dbh {
+    return DBI->connect("dbi:mysql:host=$_{host};port=$_{port};database=$_{database}");
+  }
 
-    method 'login' => (
-        params => [
-            username => { required => 1, isa => 'Str', type => 'named' },
-            password => { required => 1, isa => 'Str', type => 'named' },
-        ],
-        sub { ...  }
-    );
+=head1 BUILDARGS AND CHECKARGS
 
-    $self->login( username => $username, password => $password );
+=head1 BuildArgs
 
-You can also mix named and positional parameters, as long as all positional parameters come first and are required:
+The C<BuildArgs> attribute allows you to specify a subroutine that will be used to preprocess your arguments before they are validated against the supplied signature. It can be used as to create poor man's multimethods by coercing different types of arguments to a single signature. It is somewhat similar to what Moose's C<BUILDARGS> does for class constructors.
 
-    method 'login' => (
-        params => [
-            username => { required => 1, isa => 'Str', type => 'positional' },
-            password => { required => 1, isa => 'Str', type => 'positional' },
-            remember => { isa => 'Bool', type => 'named' },
-            secure   => { isa => 'Bool', type => 'named' },
-        ],
-        sub { ...  }
-    );
+  sub rank
+    :Args(:first :second :third)
+    :BuildArgs(_buildargs_rank)
+  { ... }
 
-    $self->login( $username, $password, remember => 1, secure => 0 );
+  # allow positional parameters as well
+  sub _buildargs_rank {
+    if (@_ == 3) {
+      return first => $_[0], second => $_[1], third => $_[2];
+    } else {
+      return @_;
+    }
+  }
 
-More complex parameter passing styles are expected to be supported in the future (e.g. named parameters in a hashref).
+If C<BuildArgs> is specified without a subroutine name, C<_buildargs_${subname}> will be assumed.
+
+  sub rank :Args(...) :BuildArgs { ... }
+  # is equivalent to
+  sub rank :Args(...) :BuildArgs(_buildargs_rank) { ... }
+
+=head1 CheckArgs
+
+The C<CheckArgs> attribute allows you to specify a subroutine that will be used to perform additional validation after the arguments are validated against the supplied signature. It can be used to perform more complex validations that cannot be expressed in a simple signature. It is somewhat similar to what Moose's C<BUILD> does for class constructors. Inside a C<CheckArgs> subroutine you can access the processed parameters in the C<%_> hash.
+
+  sub rank
+    :Args(:first :second :third)
+    :CheckArgs(_checkargs_rank)
+  { ... }
+
+  # make sure names do not repeat
+  sub _checkargs_rank {
+    if (
+      ($_{first}  eq $_{second}) or
+      ($_{first}  eq $_{third} ) or
+      ($_{second} eq $_{third} )
+    ) { die "One player can only take one place!";  }
+  }
+
+If C<CheckArgs> is specified without a subroutine name, C<_checkargs_${subname}> will be assumed.
+
+  sub rank :Args(...) :CheckArgs { ... }
+  # is equivalent to
+  sub rank :Args(...) :CheckArgs(_checkargs_rank) { ... }
 
 =head1 META CLASSES
 
-C<MooseX::Params> provides class, method and parameter metaroles, please see their sourcecode for detail (plain L<Moose>):
+C<MooseX::Params> provides method and parameter metaroles, please see their sourcecode for details:
 
 =over 4
-
-=item *
-
-L<MooseX::Params::Meta::Class>
 
 =item *
 
@@ -502,33 +463,55 @@ L<MooseX::Params::Meta::Parameter>
 
 =head1 TODO
 
-This module is still in its infancy. Some of the more important planned features include:
+=over 4
+
+=item *
+
+return value validation (C<Returns> and C<ReturnsScalar>)
+
+=item *
+
+subroutine traits (C<Does>)
+
+=item *
+
+better error checking and reporting
+
+=item *
+
+improved performance
+
+=item *
+
+lightweight implementation without meta and magic
+
+=back
+
+Whether or not these features will be implemented depends mostly on the community response to the proposed API. Currently the best way to contribute to this module would be to provide feedback and commentary - the L<Moose> mailing list will be a good place for this.
+
+=head1 BUGS
+
+Plenty. Some of the known ones are:
 
 =over 4
 
 =item *
 
-declaration of class-level parameters reusable across multiple methods
+No checking for surplus arguments
 
 =item *
 
-return value validation
+C<foreach my $value (@{$_{arrayref}})> attempts to modify C<$_{arrayref}> and triggers an exception
 
 =item *
 
-multimethods
+May be incompatible with other modules that provide attributes, including L<Perl6::Export::Attrs>
 
 =item *
 
-C<BUILDARGS> and C<BUILD> for methods
-
-=item *
-
-a C<function> keyword with similar syntax
+C<MooseX::Params::Meta::Method> is a class, should be a role
 
 =back
-
-Whether or not these features will be implemented depends mostly on the community response to the proposed API. Currently the best way to contribute to this module would be to provide feedback and commentary - the L<Moose> mailing list will be a good place for this.
 
 =head1 SEE ALSO
 

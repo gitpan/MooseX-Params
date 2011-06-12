@@ -4,7 +4,7 @@ use 5.010;
 
 package MooseX::Params::Meta::Method;
 BEGIN {
-  $MooseX::Params::Meta::Method::VERSION = '0.004';
+  $MooseX::Params::Meta::Method::VERSION = '0.005';
 }
 
 use Moose;
@@ -32,6 +32,18 @@ has 'index_offset' =>
     is      => 'ro',
     isa     => 'Int',
     default => 1,
+);
+
+has 'buildargs' =>
+(
+    is  => 'rw',
+    isa => 'Str',
+);
+
+has 'checkargs' =>
+(
+    is  => 'rw',
+    isa => 'Str',
 );
 
 has '_delayed' =>
@@ -101,6 +113,7 @@ __END__
 =pod
 
 =for :stopwords Peter Shangov TODO invocant isa metaroles metarole multimethods sourcecode
+backwards buildargs checkargs slurpy preprocess
 
 =head1 NAME
 
@@ -108,7 +121,7 @@ MooseX::Params::Meta::Method - The method metarole
 
 =head1 VERSION
 
-version 0.004
+version 0.005
 
 =head1 AUTHOR
 
