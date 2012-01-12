@@ -3,8 +3,8 @@ use 5.010;
 # ABSTRACT: The method metarole
 
 package MooseX::Params::Meta::Method;
-BEGIN {
-  $MooseX::Params::Meta::Method::VERSION = '0.005';
+{
+  $MooseX::Params::Meta::Method::VERSION = '0.006';
 }
 
 use Moose;
@@ -121,7 +121,7 @@ MooseX::Params::Meta::Method - The method metarole
 
 =head1 VERSION
 
-version 0.005
+version 0.006
 
 =head1 AUTHOR
 
@@ -129,7 +129,7 @@ Peter Shangov <pshangov@yahoo.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Peter Shangov.
+This software is copyright (c) 2012 by Peter Shangov.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

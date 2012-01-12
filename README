@@ -2,7 +2,7 @@ NAME
     MooseX::Params - Subroutine signature declaration via attributes
 
 VERSION
-    version 0.005
+    version 0.006
 
 SYNOPSIS
       # use Moose types for validation
@@ -176,7 +176,7 @@ SYNOPSIS
       }
 
 DESCRIPTION
-    This modules provides an attributes-based interface for parameter
+    This module provides an attributes-based interface for parameter
     processing in Perl 5. For the original rationale see
     <http://mechanicalrevolution.com/blog/parameter_apocalypse.html>.
 
@@ -339,7 +339,7 @@ SIGNATURE SYNTAX
       }
 
 BUILDARGS AND CHECKARGS
-BuildArgs
+  BuildArgs
     The "BuildArgs" attribute allows you to specify a subroutine that will
     be used to preprocess your arguments before they are validated against
     the supplied signature. It can be used as to create poor man's
@@ -368,7 +368,7 @@ BuildArgs
       # is equivalent to
       sub rank :Args(...) :BuildArgs(_buildargs_rank) { ... }
 
-CheckArgs
+  CheckArgs
     The "CheckArgs" attribute allows you to specify a subroutine that will
     be used to perform additional validation after the arguments are
     validated against the supplied signature. It can be used to perform more
@@ -444,7 +444,7 @@ AUTHOR
     Peter Shangov <pshangov@yahoo.com>
 
 COPYRIGHT AND LICENSE
-    This software is copyright (c) 2011 by Peter Shangov.
+    This software is copyright (c) 2012 by Peter Shangov.
 
     This is free software; you can redistribute it and/or modify it under
     the same terms as the Perl 5 programming language system itself.

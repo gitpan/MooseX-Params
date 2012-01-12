@@ -1,6 +1,6 @@
 package MooseX::Params;
-BEGIN {
-  $MooseX::Params::VERSION = '0.005';
+{
+  $MooseX::Params::VERSION = '0.006';
 }
 
 # ABSTRACT: Subroutine signature declaration via attributes
@@ -8,27 +8,29 @@ BEGIN {
 use strict;
 use warnings;
 use 5.010;
-use Attribute::Handlers;
 use MooseX::Params::Util;
 use MooseX::Params::Meta::Method;
 use Moose::Meta::Class;
+use Sub::Identify qw(sub_name);
+use Sub::Mutate qw(when_sub_bodied);
 
 sub import
 {
-    no strict 'refs';
-    push @{caller().'::ISA'}, __PACKAGE__;
-    use strict 'refs';
+    require Attribute::Lexical;
+    Attribute::Lexical->import(
+        'CODE:Args'      => _prepare_handler(\&Args),
+        'CODE:BuildArgs' => _prepare_handler(\&BuildArgs),
+        'CODE:CheckArgs' => _prepare_handler(\&CheckArgs),
+    );
 }
 
-sub Args :ATTR(CODE,RAWDATA)
-{
-    my ($package, $symbol, $referent, $attr, $data) = @_;
+### ATTRIBUTES ###
 
-    my ($name)  = $$symbol =~ /.+::(\w+)$/;
-    my $coderef = \&$symbol;
+sub Args
+{
+    my ($coderef, $name, $package, $data) = @_;
 
     my $parameters = MooseX::Params::Util::inflate_parameters($package, $data);
-
     my $wrapped_coderef = MooseX::Params::Util::wrap_method($coderef, $package, $parameters);
 
     my $method = MooseX::Params::Meta::Method->wrap(
@@ -41,24 +43,40 @@ sub Args :ATTR(CODE,RAWDATA)
     Moose::Meta::Class->initialize($package)->add_method($name, $method);
 }
 
-sub BuildArgs :ATTR(CODE,RAWDATA)
+sub BuildArgs
 {
-    my ($package, $symbol, $referent, $attr, $data) = @_;
-    my ($name)  = $$symbol =~ /.+::(\w+)$/;
+    my ($coderef, $name, $package, $data) = @_;
     $data = "_buildargs_$name" unless $data;
-
-    my $method = Moose::Meta::Class->initialize($package)->get_method($name);
-    $method->buildargs($data);
+    Moose::Meta::Class->initialize($package)->get_method($name)->buildargs($data);
 }
 
-sub CheckArgs :ATTR(CODE,RAWDATA)
+sub CheckArgs
 {
-    my ($package, $symbol, $referent, $attr, $data) = @_;
-    my ($name)  = $$symbol =~ /.+::(\w+)$/;
+    my ($coderef, $name, $package, $data) = @_;
     $data = "_checkargs_$name" unless $data;
+    Moose::Meta::Class->initialize($package)->get_method($name)->checkargs($data);
+}
 
-    my $method = Moose::Meta::Class->initialize($package)->get_method($name);
-    $method->checkargs($data);
+### PRIVATE FUNCTIONS ###
+
+sub _prepare_handler
+{
+    my $handler = shift;
+
+    return sub {
+        my ($symbol, $attr, $data, $caller) = @_;
+
+        my ($package, $filename, $line, $subroutine, $hasargs, $wantarray,
+            $evaltext, $is_require, $hints, $bitmask, $hinthash) = @$caller;
+
+        when_sub_bodied ( $symbol, sub
+        {
+            my $coderef = shift;
+            my $name = sub_name($coderef);
+
+            return $handler->($coderef, $name, $package, $data);
+        });
+    };
 }
 
 1;
@@ -76,7 +94,7 @@ MooseX::Params - Subroutine signature declaration via attributes
 
 =head1 VERSION
 
-version 0.005
+version 0.006
 
 =head1 SYNOPSIS
 
@@ -252,7 +270,7 @@ version 0.005
 
 =head1 DESCRIPTION
 
-This modules provides an attributes-based interface for parameter processing in Perl 5. For the original rationale see L<http://mechanicalrevolution.com/blog/parameter_apocalypse.html>.
+This module provides an attributes-based interface for parameter processing in Perl 5. For the original rationale see L<http://mechanicalrevolution.com/blog/parameter_apocalypse.html>.
 
 The proposed interface is based on three cornerstone propositions:
 
@@ -397,7 +415,7 @@ Within a parameter builder, you can access all other parameters in the C<%_> has
 
 =head1 BUILDARGS AND CHECKARGS
 
-=head1 BuildArgs
+=head2 BuildArgs
 
 The C<BuildArgs> attribute allows you to specify a subroutine that will be used to preprocess your arguments before they are validated against the supplied signature. It can be used as to create poor man's multimethods by coercing different types of arguments to a single signature. It is somewhat similar to what Moose's C<BUILDARGS> does for class constructors.
 
@@ -421,7 +439,7 @@ If C<BuildArgs> is specified without a subroutine name, C<_buildargs_${subname}>
   # is equivalent to
   sub rank :Args(...) :BuildArgs(_buildargs_rank) { ... }
 
-=head1 CheckArgs
+=head2 CheckArgs
 
 The C<CheckArgs> attribute allows you to specify a subroutine that will be used to perform additional validation after the arguments are validated against the supplied signature. It can be used to perform more complex validations that cannot be expressed in a simple signature. It is somewhat similar to what Moose's C<BUILD> does for class constructors. Inside a C<CheckArgs> subroutine you can access the processed parameters in the C<%_> hash.
 
@@ -533,7 +551,7 @@ Peter Shangov <pshangov@yahoo.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Peter Shangov.
+This software is copyright (c) 2012 by Peter Shangov.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

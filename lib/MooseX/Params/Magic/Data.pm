@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Data;
-BEGIN {
-  $MooseX::Params::Magic::Data::VERSION = '0.005';
+{
+  $MooseX::Params::Magic::Data::VERSION = '0.006';
 }
 
 # ABSTRACT: Base class for wizard data object
@@ -77,7 +77,7 @@ MooseX::Params::Magic::Data - Base class for wizard data object
 
 =head1 VERSION
 
-version 0.005
+version 0.006
 
 =head1 AUTHOR
 
@@ -85,7 +85,7 @@ Peter Shangov <pshangov@yahoo.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Peter Shangov.
+This software is copyright (c) 2012 by Peter Shangov.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

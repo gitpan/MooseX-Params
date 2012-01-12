@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Base;
-BEGIN {
-  $MooseX::Params::Magic::Base::VERSION = '0.005';
+{
+  $MooseX::Params::Magic::Base::VERSION = '0.006';
 }
 
 # ABSTRACT: Base class for building Variable::Magic wizards
@@ -57,7 +57,7 @@ MooseX::Params::Magic::Base - Base class for building Variable::Magic wizards
 
 =head1 VERSION
 
-version 0.005
+version 0.006
 
 =head1 AUTHOR
 
@@ -65,7 +65,7 @@ Peter Shangov <pshangov@yahoo.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Peter Shangov.
+This software is copyright (c) 2012 by Peter Shangov.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
