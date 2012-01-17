@@ -21,6 +21,7 @@ t/05-buildargs.t
 t/06-inheritance.t
 t/07-procedural.t
 t/08-synopsis.t
+t/99-bugs.t
 t/release-eol.t
 t/release-no-tabs.t
 t/release-pod-syntax.t

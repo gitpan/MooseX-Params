@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Wizard;
 {
-  $MooseX::Params::Magic::Wizard::VERSION = '0.006';
+  $MooseX::Params::Magic::Wizard::VERSION = '0.007';
 }
 
 # ABSTRACT: Magic behavior for %_
@@ -52,7 +52,12 @@ sub fetch
 
 sub store
 {
-    Carp::croak "Attempt to modify read-only parameter" if caller ne __PACKAGE__;
+    my ( $ref, $data, $key ) = @_;
+
+    if (caller ne __PACKAGE__ and caller ne 'MooseX::Params::Util')
+    {
+        Carp::carp "Attempt to modify read-only parameter '$key'";
+    }
 }
 
 1;
@@ -69,7 +74,7 @@ MooseX::Params::Magic::Wizard - Magic behavior for %_
 
 =head1 VERSION
 
-version 0.006
+version 0.007
 
 =head1 AUTHOR
 

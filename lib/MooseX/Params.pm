@@ -1,6 +1,6 @@
 package MooseX::Params;
 {
-  $MooseX::Params::VERSION = '0.006';
+  $MooseX::Params::VERSION = '0.007';
 }
 
 # ABSTRACT: Subroutine signature declaration via attributes
@@ -94,7 +94,7 @@ MooseX::Params - Subroutine signature declaration via attributes
 
 =head1 VERSION
 
-version 0.006
+version 0.007
 
 =head1 SYNOPSIS
 
