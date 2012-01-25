@@ -1,6 +1,6 @@
 package MooseX::Params::Util;
 {
-  $MooseX::Params::Util::VERSION = '0.007';
+  $MooseX::Params::Util::VERSION = '0.008';
 }
 
 # ABSTRACT: Parameter processing utilities
@@ -14,15 +14,18 @@ use List::Util                   qw(max first);
 use Scalar::Util                 qw(isweak);
 use Perl6::Caller                qw(caller);
 use B::Hooks::EndOfScope         qw(on_scope_end); # magic fails without this, have to find out why ...
-use attributes                   qw();
+use Sub::Identify                qw(sub_name);
+use Sub::Mutate                  qw(when_sub_bodied);
+use Carp                         qw(croak);
 use Class::MOP::Class;
+use MooseX::Params::Meta::Method;
 use Package::Stash;
 use Text::CSV_XS;
 use MooseX::Params::Meta::Parameter;
 use MooseX::Params::Magic::Wizard;
 
 # DESCRIPTION: Build a parameter from either a default value or a builder
-# USED BY:     MooseX::Params::Util::process
+# USED BY:     MooseX::Params::Util::process_args
 sub build
 {
     my ($param, $stash) = @_;
@@ -63,21 +66,37 @@ sub build
 # USED BY:     MooseX::Params::Args
 sub wrap_method
 {
-    my ($coderef, $package, $parameters) = @_;
+    my ($package_name, $method_name, $coderef) = @_;
 
     return sub
     {
-        local %_ = process(@_);
+        my $meta = Class::MOP::Class->initialize($package_name);
+        my $method = $meta->get_method($method_name);
+        my $wantarray = wantarray;
 
-        my $wizard = MooseX::Params::Magic::Wizard->new;
+        local %_;
 
-        Variable::Magic::cast(%_, $wizard,
-            parameters => $parameters,
-            wrapper    => \&wrap_param_builder,
-            package    => $package,
-        );
+        if ( $method->has_parameters )
+        {
 
-        return $coderef->(@_);
+            %_ = process_args($meta, $method, @_);
+            my $wizard = MooseX::Params::Magic::Wizard->new;
+
+            Variable::Magic::cast(%_, $wizard,
+                parameters => $method->parameters,
+                wrapper    => \&wrap_param_builder,
+                package    => $package_name,
+            );
+        }
+
+        if ( $method->has_return_value_constraint)
+        {
+            return process_return_values($method, $wantarray, $coderef->(@_));
+        }
+        else
+        {
+            return $coderef->(@_);
+        }
     };
 }
 
@@ -129,15 +148,10 @@ sub wrap_checkargs
 # DESCRIPTION: Get the parameters passed to a method, pair them with parameter definitions,
 #              build, coerce, validate and return them as a hash
 # USED BY:     MooseX::Params::Util::wrap_method
-sub process
+sub process_args
 {
-    my @parameters = @_;
+    my ( $meta, $method, @parameters ) = @_;
 
-    # get parameter definitions from meta class
-    my $frame = 1;
-    my ($package_name, $method_name) = caller($frame)->subroutine  =~ /^(.+)::(\w+)$/;
-    my $meta = Class::MOP::Class->initialize($package_name);
-    my $method = $meta->get_method($method_name);
     my @parameter_objects = $method->all_parameters if $method->has_parameters;
     return unless @parameter_objects;
 
@@ -174,16 +188,16 @@ sub process
     # start processing
     my %return_values;
 
-    my $stash = Package::Stash->new($package_name);
+    my $stash = Package::Stash->new($method->package_name);
 
     foreach my $param (@parameter_objects)
     {
-        # $is_set - has a value been passed for this parameter
-        # $is_required - is the parameter required
-        # $is_lazy - should we build the value now or on first use
-        # $has_default - does the parameter have a default value or a builder
+        # $is_set         - has a value been passed for this parameter
+        # $is_required    - is the parameter required
+        # $is_lazy        - should we build the value now or on first use
+        # $has_default    - does the parameter have a default value or a builder
         # $original_value - the value passed for this parameter
-        # $value - the value to be returned for this parameter, after any coercions
+        # $value          - the value to be returned for this parameter, after any coercions
 
         my ( $is_set, $original_value );
 
@@ -260,15 +274,59 @@ sub process
     if ($method->checkargs)
     {
         my $checkargs = $meta->get_method($method->checkargs)->body;
-        my $wrapped = wrap_checkargs($checkargs, $package_name, $method->parameters);
+        my $wrapped = wrap_checkargs($checkargs, $method->package_name, $method->parameters);
         $wrapped->(%return_values);
     }
 
     return %return_values;
 }
 
+sub process_return_values
+{
+    my ( $method, $wantarray, @values ) = @_;
+
+    return @values unless $method->has_return_value_constraint;
+
+    my $constraint =
+        Moose::Util::TypeConstraints::find_or_parse_type_constraint(
+            $method->returns
+        );
+
+    if ( $constraint->is_a_type_of('Array'))
+    {
+        $constraint->assert_valid(\@values);
+        return @values if $wantarray;
+
+        given ($method->returns_scalar)
+        {
+            when ('First')    { return $values[0] }
+            when ('Last')     { return $values[-1] }
+            when ('ArrayRef') { return \@values }
+            when ('Count')    { return scalar @values }
+            default           { return @values }
+        }
+    }
+    elsif ( $constraint->is_a_type_of('Hash') )
+    {
+        $constraint->assert_valid({@values});
+        return @values if $wantarray;
+
+        given ($method->returns_scalar)
+        {
+            when ('HashRef') { return {@values} }
+            default          { return @values }
+        }
+    }
+    else
+    {
+        $constraint->assert_valid($values[0]);
+        return $values[0];
+    }
+
+}
+
 # DESCRIPTION: Given a parameter specification and a value, validate and coerce the value
-# USED BY:     MooseX::Params::Util::process
+# USED BY:     MooseX::Params::Util::process_args
 sub validate
 {
     my ($param, $value) = @_;
@@ -409,6 +467,49 @@ sub inflate_parameters
     return \%inflated_parameters;
 }
 
+sub prepare_attribute_handler
+{
+    my $handler = Moose::Meta::Class->initialize('MooseX::Params')
+                                    ->get_method(shift)
+                                    ->body;
+
+    return sub
+    {
+        my ($symbol, $attr, $data, $caller) = @_;
+
+        my ($package, $filename, $line, $subroutine, $hasargs, $wantarray,
+            $evaltext, $is_require, $hints, $bitmask, $hinthash) = @$caller;
+
+        when_sub_bodied ( $symbol, sub
+        {
+            my $coderef = shift;
+            my $name = sub_name($coderef);
+
+            croak "MooseX::Params currently does not support anonymous subroutines"
+                if $name eq "__ANON__";
+
+            my $metaclass = Moose::Meta::Class->initialize($package);
+            my $method = $metaclass->get_method($name);
+
+            unless ( $method->isa('MooseX::Params::Meta::Method') )
+            {
+                my $wrapped_coderef = MooseX::Params::Util::wrap_method($package, $name, $coderef);
+
+                my $wrapped_method = MooseX::Params::Meta::Method->wrap(
+                    $wrapped_coderef,
+                    name         => $name,
+                    package_name => $package,
+                );
+
+                $metaclass->add_method($name, $wrapped_method);
+
+                $method = $wrapped_method;
+            }
+
+            return $handler->($method, $data);
+        });
+    };
+}
 1;
 
 __END__
@@ -423,7 +524,7 @@ MooseX::Params::Util - Parameter processing utilities
 
 =head1 VERSION
 
-version 0.007
+version 0.008
 
 =head1 AUTHOR
 

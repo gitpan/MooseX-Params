@@ -1,6 +1,6 @@
 package MooseX::Params;
 {
-  $MooseX::Params::VERSION = '0.007';
+  $MooseX::Params::VERSION = '0.008';
 }
 
 # ABSTRACT: Subroutine signature declaration via attributes
@@ -9,74 +9,58 @@ use strict;
 use warnings;
 use 5.010;
 use MooseX::Params::Util;
-use MooseX::Params::Meta::Method;
-use Moose::Meta::Class;
-use Sub::Identify qw(sub_name);
-use Sub::Mutate qw(when_sub_bodied);
+use MooseX::Params::TypeConstraints;
+use Carp qw(croak);
 
 sub import
 {
+    my @attrs = qw(Args BuildArgs CheckArgs Returns ReturnsScalar);
+
+    my @handlers;
+    foreach my $attribute (@attrs)
+    {
+        push @handlers, "CODE:$attribute",
+            MooseX::Params::Util::prepare_attribute_handler($attribute);
+    }
+
     require Attribute::Lexical;
-    Attribute::Lexical->import(
-        'CODE:Args'      => _prepare_handler(\&Args),
-        'CODE:BuildArgs' => _prepare_handler(\&BuildArgs),
-        'CODE:CheckArgs' => _prepare_handler(\&CheckArgs),
-    );
+    Attribute::Lexical->import(@handlers);
 }
 
 ### ATTRIBUTES ###
 
 sub Args
 {
-    my ($coderef, $name, $package, $data) = @_;
-
-    my $parameters = MooseX::Params::Util::inflate_parameters($package, $data);
-    my $wrapped_coderef = MooseX::Params::Util::wrap_method($coderef, $package, $parameters);
-
-    my $method = MooseX::Params::Meta::Method->wrap(
-        $wrapped_coderef,
-        name         => $name,
-        package_name => $package,
-        parameters   => $parameters,
-    );
-
-    Moose::Meta::Class->initialize($package)->add_method($name, $method);
+    my ($method, $data) = @_;
+    my $parameters = MooseX::Params::Util::inflate_parameters($method->package_name, $data);
+    $method->parameters($parameters);
 }
 
 sub BuildArgs
 {
-    my ($coderef, $name, $package, $data) = @_;
-    $data = "_buildargs_$name" unless $data;
-    Moose::Meta::Class->initialize($package)->get_method($name)->buildargs($data);
+    my ($method, $data) = @_;
+    $data = "_buildargs_" . $method->name unless $data;
+    $method->buildargs($data);
 }
 
 sub CheckArgs
 {
-    my ($coderef, $name, $package, $data) = @_;
-    $data = "_checkargs_$name" unless $data;
-    Moose::Meta::Class->initialize($package)->get_method($name)->checkargs($data);
+    my ($method, $data) = @_;
+    $data = "_checkargs_" . $method->name unless $data;
+    $method->checkargs($data);
 }
 
-### PRIVATE FUNCTIONS ###
-
-sub _prepare_handler
+sub Returns
 {
-    my $handler = shift;
+    my ($method, $data) = @_;
+    croak "Empty return value constraint not allowed" unless $data;
+    $method->returns($data);
+}
 
-    return sub {
-        my ($symbol, $attr, $data, $caller) = @_;
-
-        my ($package, $filename, $line, $subroutine, $hasargs, $wantarray,
-            $evaltext, $is_require, $hints, $bitmask, $hinthash) = @$caller;
-
-        when_sub_bodied ( $symbol, sub
-        {
-            my $coderef = shift;
-            my $name = sub_name($coderef);
-
-            return $handler->($coderef, $name, $package, $data);
-        });
-    };
+sub ReturnsScalar
+{
+    my ($method, $data) = @_;
+    $method->returns_scalar($data);
 }
 
 1;
@@ -94,7 +78,7 @@ MooseX::Params - Subroutine signature declaration via attributes
 
 =head1 VERSION
 
-version 0.007
+version 0.008
 
 =head1 SYNOPSIS
 
@@ -240,6 +224,21 @@ version 0.007
     }
   }
 
+  # return value validation
+  sub sum :Args(a, b) :Returns(Num) { ... }
+
+  # validate non-scalar return values
+  sub get_data :Returns(Array) { qw(foo bar baz) }
+  my ($foo, $bar, $baz) = get_data();
+
+  # force special behavior in sclar context
+  sub get_winners :Returns(Array) :ReturnsScalar(First) {
+    my @ordered_winners = ...;
+    return @ordered_winners;
+  }
+
+  my $first_place = get_winners();
+
   # in a class
   package User;
 
@@ -260,7 +259,7 @@ version 0.007
   );
 
   # note the shortcut invocant syntax
-  sub login :Args(self: Str pw) {
+  sub login :Args(self: Str pw) :Returns(Bool) {
     return 0 if $_{pw} ne $_{self}->password;
 
     $_{self}->last_login( DateTime->now() );
@@ -462,6 +461,49 @@ If C<CheckArgs> is specified without a subroutine name, C<_checkargs_${subname}>
   sub rank :Args(...) :CheckArgs { ... }
   # is equivalent to
   sub rank :Args(...) :CheckArgs(_checkargs_rank) { ... }
+
+=head1 RETURN VALUE VALIDATION
+
+=head2 Returns
+
+C<MooseX::Params> provids a basic mechanism for return value validation via the C<Returns> attribute.
+
+ sub add :Args(a, b) :Returns(Num) { return $_{a} + $_{b} }
+ my $five = add(2,3);
+
+Any Moose type name may be used as an arbument to C<Returns>. If your subroutine returns a list of values, you will need to use the special parametric types C<Array> and C<Hash>. They behave identically to C<ArrayRef> and C<HashRef>, except that they work with lists instead of references:
+
+  sub myreverse :Args(*items) :Returns(Array) { return reverse @{ $_{items} } }
+  my @list = qw(foo bar baz);
+  my @reversed = myreverse(@list);
+
+Note that C<wantarray> inside subroutines that use C<Returns> will always return true (see below).
+
+=head2 ReturnsScalar
+
+Return value validation does not play well with context magic. If you return different values depending on context, validation will break. Therefore, subroutines that use C<Returns> are always evaluated in list context to obrain their return value. The C<ResultScalar> attribute allows you to explicitly change how your subroutine will behave in scalar context. It accepts one of four options:
+
+=over
+
+=item Count (default)
+
+In scalar context return the number of items in the return value list.
+
+=item First
+
+In scalar context return the first item in the return value list.
+
+=item Last
+
+In scalar context return the last item in the return value list.
+
+=item ArrayRef
+
+In scalar context return a reference to the return value list.
+
+=back
+
+  sub results :Returns(Array[MyApp::Object]) :ReturnsScalar(ArrayRef) { ... }
 
 =head1 META CLASSES
 

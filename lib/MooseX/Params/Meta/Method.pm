@@ -4,7 +4,7 @@ use 5.010;
 
 package MooseX::Params::Meta::Method;
 {
-  $MooseX::Params::Meta::Method::VERSION = '0.007';
+  $MooseX::Params::Meta::Method::VERSION = '0.008';
 }
 
 use Moose;
@@ -44,6 +44,19 @@ has 'checkargs' =>
 (
     is  => 'rw',
     isa => 'Str',
+);
+
+has 'returns' =>
+(
+    is        => 'rw',
+    isa       => 'Str',
+    predicate => 'has_return_value_constraint',
+);
+
+has 'returns_scalar' =>
+(
+    is        => 'rw',
+    isa       => 'Str',
 );
 
 has '_delayed' =>
@@ -121,7 +134,7 @@ MooseX::Params::Meta::Method - The method metarole
 
 =head1 VERSION
 
-version 0.007
+version 0.008
 
 =head1 AUTHOR
 

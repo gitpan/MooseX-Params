@@ -2,7 +2,7 @@ NAME
     MooseX::Params - Subroutine signature declaration via attributes
 
 VERSION
-    version 0.007
+    version 0.008
 
 SYNOPSIS
       # use Moose types for validation
@@ -147,6 +147,21 @@ SYNOPSIS
         }
       }
 
+      # return value validation
+      sub sum :Args(a, b) :Returns(Num) { ... }
+
+      # validate non-scalar return values
+      sub get_data :Returns(Array) { qw(foo bar baz) }
+      my ($foo, $bar, $baz) = get_data();
+
+      # force special behavior in sclar context
+      sub get_winners :Returns(Array) :ReturnsScalar(First) {
+        my @ordered_winners = ...;
+        return @ordered_winners;
+      }
+
+      my $first_place = get_winners();
+
       # in a class
       package User;
 
@@ -167,7 +182,7 @@ SYNOPSIS
       );
 
       # note the shortcut invocant syntax
-      sub login :Args(self: Str pw) {
+      sub login :Args(self: Str pw) :Returns(Bool) {
         return 0 if $_{pw} ne $_{self}->password;
 
         $_{self}->last_login( DateTime->now() );
@@ -397,6 +412,50 @@ BUILDARGS AND CHECKARGS
       sub rank :Args(...) :CheckArgs { ... }
       # is equivalent to
       sub rank :Args(...) :CheckArgs(_checkargs_rank) { ... }
+
+RETURN VALUE VALIDATION
+  Returns
+    "MooseX::Params" provids a basic mechanism for return value validation
+    via the "Returns" attribute.
+
+     sub add :Args(a, b) :Returns(Num) { return $_{a} + $_{b} }
+     my $five = add(2,3);
+
+    Any Moose type name may be used as an arbument to "Returns". If your
+    subroutine returns a list of values, you will need to use the special
+    parametric types "Array" and "Hash". They behave identically to
+    "ArrayRef" and "HashRef", except that they work with lists instead of
+    references:
+
+      sub myreverse :Args(*items) :Returns(Array) { return reverse @{ $_{items} } }
+      my @list = qw(foo bar baz);
+      my @reversed = myreverse(@list);
+
+    Note that "wantarray" inside subroutines that use "Returns" will always
+    return true (see below).
+
+  ReturnsScalar
+    Return value validation does not play well with context magic. If you
+    return different values depending on context, validation will break.
+    Therefore, subroutines that use "Returns" are always evaluated in list
+    context to obrain their return value. The "ResultScalar" attribute
+    allows you to explicitly change how your subroutine will behave in
+    scalar context. It accepts one of four options:
+
+    Count (default)
+        In scalar context return the number of items in the return value
+        list.
+
+    First
+        In scalar context return the first item in the return value list.
+
+    Last
+        In scalar context return the last item in the return value list.
+
+    ArrayRef
+        In scalar context return a reference to the return value list.
+
+      sub results :Returns(Array[MyApp::Object]) :ReturnsScalar(ArrayRef) { ... }
 
 META CLASSES
     "MooseX::Params" provides method and parameter metaroles, please see
