@@ -1,6 +1,6 @@
 package MooseX::Params::Util;
 {
-  $MooseX::Params::Util::VERSION = '0.008';
+  $MooseX::Params::Util::VERSION = '0.009';
 }
 
 # ABSTRACT: Parameter processing utilities
@@ -524,7 +524,7 @@ MooseX::Params::Util - Parameter processing utilities
 
 =head1 VERSION
 
-version 0.008
+version 0.009
 
 =head1 AUTHOR
 

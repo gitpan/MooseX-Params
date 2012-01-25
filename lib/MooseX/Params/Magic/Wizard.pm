@@ -1,6 +1,6 @@
 package MooseX::Params::Magic::Wizard;
 {
-  $MooseX::Params::Magic::Wizard::VERSION = '0.008';
+  $MooseX::Params::Magic::Wizard::VERSION = '0.009';
 }
 
 # ABSTRACT: Magic behavior for %_
@@ -74,7 +74,7 @@ MooseX::Params::Magic::Wizard - Magic behavior for %_
 
 =head1 VERSION
 
-version 0.008
+version 0.009
 
 =head1 AUTHOR
 

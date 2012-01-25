@@ -1,6 +1,6 @@
 package MooseX::Params::Meta::TypeConstraint::Listable;
 {
-  $MooseX::Params::Meta::TypeConstraint::Listable::VERSION = '0.008';
+  $MooseX::Params::Meta::TypeConstraint::Listable::VERSION = '0.009';
 }
 
 use strict;
@@ -27,7 +27,7 @@ MooseX::Params::Meta::TypeConstraint::Listable
 
 =head1 VERSION
 
-version 0.008
+version 0.009
 
 =head1 AUTHOR
 
