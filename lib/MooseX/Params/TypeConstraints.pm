@@ -1,6 +1,6 @@
 package MooseX::Params::TypeConstraints;
 {
-  $MooseX::Params::TypeConstraints::VERSION = '0.009';
+  $MooseX::Params::TypeConstraints::VERSION = '0.010';
 }
 
 use strict;
@@ -85,7 +85,7 @@ $registry->add_type_constraint(
 
 package Moose::Util::TypeConstraints;
 {
-  $Moose::Util::TypeConstraints::VERSION = '0.009';
+  $Moose::Util::TypeConstraints::VERSION = '0.010';
 }
 
 my @NEW_PARAMETERIZABLE_TYPES
@@ -109,7 +109,7 @@ MooseX::Params::TypeConstraints
 
 =head1 VERSION
 
-version 0.009
+version 0.010
 
 =head1 AUTHOR
 

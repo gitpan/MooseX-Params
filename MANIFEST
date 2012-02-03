@@ -27,6 +27,7 @@ t/09-anon.t
 t/10-returns.t
 t/11-returns_scalar.t
 t/12-listables.t
+t/13-readonly.t
 t/99-bugs.t
 t/release-eol.t
 t/release-no-tabs.t

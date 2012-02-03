@@ -2,7 +2,7 @@ NAME
     MooseX::Params - Subroutine signature declaration via attributes
 
 VERSION
-    version 0.009
+    version 0.010
 
 SYNOPSIS
       # use Moose types for validation

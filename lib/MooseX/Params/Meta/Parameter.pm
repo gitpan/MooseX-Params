@@ -1,6 +1,6 @@
 package MooseX::Params::Meta::Parameter;
 {
-  $MooseX::Params::Meta::Parameter::VERSION = '0.009';
+  $MooseX::Params::Meta::Parameter::VERSION = '0.010';
 }
 
 # ABSTRACT: The parameter metarole
@@ -170,7 +170,7 @@ MooseX::Params::Meta::Parameter - The parameter metarole
 
 =head1 VERSION
 
-version 0.009
+version 0.010
 
 =head1 AUTHOR
 

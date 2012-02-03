@@ -39,6 +39,7 @@ my %WriteMakefileArgs = (
     "Moose::Util::TypeConstraints" => 0,
     "Package::Stash" => "0.18",
     "Perl6::Caller" => 0,
+    "Scalar::Readonly" => 0,
     "Scalar::Util" => 0,
     "Sub::Identify" => 0,
     "Sub::Mutate" => 0,
@@ -49,7 +50,7 @@ my %WriteMakefileArgs = (
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.009",
+  "VERSION" => "0.010",
   "test" => {
     "TESTS" => "t/*.t"
   }
